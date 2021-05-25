@@ -11,19 +11,18 @@ public:
   Text(char* s = 0);
   ~Text();
 
-  TextIter GetRoot(); //Создание рут
-  TextIter Find(char c); //Поиск буквы. Вернет итератор после найденой буквы
-  TextIter Find(char* c); //Поиск. Вернет итератор после найденой буквы
-  TextIter FindWord(char* c); //Поиск слова. Вернет итератор после найденого слова
+  TextIter GetRoot(); //get root node
+  TextIter Find(char c); //find a character
+  TextIter Find(char* c); //find a group of characters
+  TextIter FindWord(char* c); //find a word
 
-  //Доп
-  void SaveToFile(); //Сохранить в файл
-  void LoadFromFile(string _way); //Загрузить из файла
+  void Insert(char* c, TextIter i); //insert after i
+  void InsertData(char* c, TextIter i); //insert data after i
+  void Delete(int count, TextIter i); //delete count symbols after i
+  char* Copy(int count, TextIter i); //copy count symbols after i
 
-  void Insert(char* c, TextIter i); //Вставить после i
-  void InsertData(char* c, TextIter i);
-  void Delete(int count, TextIter i); //Удалить начиная с i, указанное количество букв
-  char* Copy(int count, TextIter i); //Копирует указанное количество букв, начиная с i
+  void SaveToFile(); 
+  void LoadFromFile(string filedir);
 
   friend std::ostream& operator<<(std::ostream& o, Text& t);
 };
@@ -37,14 +36,14 @@ public:
   TextIter(Text& _text, TextNode* _node, TStack<TextNode*> _st);
   TextIter(const TextIter& t);
 
-  bool GoNext(); //Перейти дальше
-  bool GoNextChar(); //Перейти к следующей букве
-  bool IsEnd(); //Првоерка конца
+  bool GoNext();
+  bool GoNextChar(); //move to next char
+  bool IsEnd(); //end check
 
-  void ResetToString();
-  void ResetToWord();
+  void ResetToString(); //move to string containing the word
+  void ResetToWord(); //move to word containing the char
 
-  TextNode* Get(); //Получить весь текст
+  TextNode* Get(); //get all text
 };
 
 
@@ -59,7 +58,7 @@ TextIter::TextIter(const TextIter& t) : text(t.text)
   st = t.st;
 }
 
-bool TextIter::GoNext() //Переход дальше
+bool TextIter::GoNext()
 {
   if (node->GetLevel() == 3)
   {
@@ -126,7 +125,7 @@ bool TextIter::GoNextChar()
   {
     if (st.IsEmpty())
     {
-      throw - 1; //Переполнение стека
+      throw - 1;
     }
 
     TextNode* temp = st.Get();
@@ -164,7 +163,7 @@ bool TextIter::IsEnd()
   {
     if (st.IsEmpty())
     {
-      throw - 1; //Переполнение стека
+      throw - 1;
     }
 
     TextNode* prev = st.Get();
@@ -327,12 +326,12 @@ void Text::SaveToFile()
   }
 }
 
-void Text::LoadFromFile(string _way) // _way - путь к файлу
+void Text::LoadFromFile(string filedir)
 {
-  string temp; //Считаем сюда файл, что бы узнать длину строки
+  string temp;
 
-  ifstream inf(_way);
-  ifstream inf_2(_way);
+  ifstream inf(filedir);
+  ifstream inf_2(filedir);
 
   if (!inf.is_open())
   {
@@ -340,27 +339,27 @@ void Text::LoadFromFile(string _way) // _way - путь к файлу
   }
   else
   {
-    getline(inf, temp); //Считываем
-    inf.close(); //Закрываем первый файл
+    getline(inf, temp);
+    inf.close();
 
-    int size = temp.length(); //Записываем длину строки
-    char* ch = new char[size + 1]; //Создаем чар* нужной длинны
-    ch[size] = '\0'; //Устанавливаем конец строки
+    int size = temp.length();
+    char* ch = new char[size + 1];
+    ch[size] = '\0';
 
-    if (!inf_2.is_open()) //Открываем файл второй раз
+    if (!inf_2.is_open())
     {
       throw - 1;
     }
     else
     {
-      for (int i = 0; i < size; i++) //Считываем 
+      for (int i = 0; i < size; i++)
       {
         ch[i] = inf_2.get();
       }
 
-      inf_2.close(); //Закрываем второй файл
+      inf_2.close();
     }
-    root = new TextNode(ch, 1); //Создаем
+    root = new TextNode(ch, 1);
 
     if (ch != NULL)
     {
@@ -379,21 +378,18 @@ void Text::Insert(char* c, TextIter i)
 
 inline void Text::InsertData(char* c, TextIter i)
 {
-  //Символ может быть побелом
-
-
-  if (strlen(c) == 1) //Ситуация, когда получен символ
+  if (strlen(c) == 1) //only one char
   {
     Insert(c, i);
   }
-  else //Если чар* содержит больше 1 символа
+  else //multiple chars
   {
     int level = 2;
     int space = 0;
 
     for (int q = 0; q < strlen(c); q++)
     {
-      if (c[q] == ' ') //Если есть пробел -> строка
+      if (c[q] == ' ') //if space is present
       {
         level = 1;
         break;
@@ -403,11 +399,11 @@ inline void Text::InsertData(char* c, TextIter i)
     TextIter osn = i;
     TextNode* next = i.Get()->GetNext();
 
-    if (next->GetC() == ' ' || next->GetC() == '.') //Если данные вставляются после слова (Next содержит пробел, точку)
+    if (next->GetC() == ' ' || next->GetC() == '.') //if insertion is after a dot or space
     {
-      i.GoNextChar(); //Переходим за пробел или точку
+      i.GoNextChar(); 
       int size = strlen(c);
-      char* t = new char[strlen(c) + 1]; //Создаем новый чар, добавляем в конец пробел
+      char* t = new char[strlen(c) + 1];
       t[strlen(c) + 1] = '\0';
 
       for (int j = 0; j < strlen(c); j++)
@@ -421,13 +417,11 @@ inline void Text::InsertData(char* c, TextIter i)
       next->SetNext(node);
       i.Get()->SetNext(node);
     }
-    else //Если данные вставляются в тело слова
+    else 
     {
       int cc = 0;
       char symbol = ' ';
       TextNode* cc_node = i.Get()->GetNext();
-
-      //Считаем длину остатка слова
       while ((cc_node->GetC() != '.') && (cc_node->GetC() != ' ') && (cc_node->GetC() != '\n'))
       {
         cc++;
@@ -443,8 +437,6 @@ inline void Text::InsertData(char* c, TextIter i)
       {
         symbol = '\n';
       }
-
-      //Создаем итоговые данные для вставки(слово + пробел + остаток уже имеющегося слова + символ после него(пробел, точка, новая строка))
       char* temp = new char[strlen(c) + cc + 3];
       temp[strlen(c) + cc + 3] = '\0';
       temp[0] = ' ';
@@ -486,7 +478,6 @@ void Text::Delete(int count, TextIter i)
   TStack<TextNode*> stack[3];
   int del = 0;
   int level = i.Get()->GetLevel();
-  //Перейти к букве, с которой нужно удалять
   if (level < 3)
   {
     i.GoNextChar();
@@ -519,8 +510,6 @@ void Text::Delete(int count, TextIter i)
 
   if (del < count)
     throw - 1;
-
-  //Удаление букв в одном слове
   if (stack[0].IsEmpty() && stack[1].IsEmpty())
   {
     TextIter prev = i;
@@ -542,7 +531,6 @@ void Text::Delete(int count, TextIter i)
     return;
   }
 
-  //Установка nulltr для буквы, после которой начинается удаление
   TextIter prev = i;
   prev.ResetToWord();
 
@@ -561,7 +549,7 @@ void Text::Delete(int count, TextIter i)
     prev.Get()->SetDown(nullptr);
   }
 
-  if (stack[0].IsEmpty()) //Удаление букв в одной строке
+  if (stack[0].IsEmpty())
   {
     TextNode* last_word = stack[1].Get();
     TextNode* last_letter = stack[2].Get();
@@ -579,7 +567,7 @@ void Text::Delete(int count, TextIter i)
       }
     }
   }
-  else //Удаление букв в разных строках
+  else
   {
     TextNode* last_string = stack[0].Get();
     TextNode* last_word = stack[1].Get();
